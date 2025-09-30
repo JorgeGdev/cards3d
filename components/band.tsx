@@ -59,50 +59,94 @@ export default function Band({
     if (!imageUrl || !customMap) return
 
     console.log("Configurando textura:", imageUrl)
-    console.log("Dimensiones imagen:", customMap.image?.width, "x", customMap.image?.height)
 
     // Correcciones básicas para mapas en GLTF
     customMap.colorSpace = THREE.SRGBColorSpace
     customMap.flipY = false
     customMap.anisotropy = 16
     
-    // Probemos con RepeatWrapping y valores más extremos
-    customMap.wrapS = THREE.RepeatWrapping
-    customMap.wrapT = THREE.RepeatWrapping
+    // Usar ClampToEdgeWrapping para evitar repeticiones
+    customMap.wrapS = THREE.ClampToEdgeWrapping
+    customMap.wrapT = THREE.ClampToEdgeWrapping
 
-    // Vamos a probar valores más extremos para ver si hay cambio
-    const SCALE_FACTOR = 1.5 // Valor para mostrar más de la imagen (MÁS PEQUEÑO = imagen MÁS GRANDE)
+    // Esperar a que la imagen se cargue para obtener dimensiones reales
+    if (customMap.image) {
+      const imgWidth = customMap.image.width
+      const imgHeight = customMap.image.height
+      const imgAspect = imgWidth / imgHeight
+      
+      // Aspect ratio de la carta (aproximadamente 2:1.75)
+      const cardAspect = 2 / 1.75
+      
+      let scaleX = 1.3
+      let scaleY = 1.3
+      let offsetX = 0
+      let offsetY = 0
+      
+      if (imgAspect > cardAspect) {
+        // Imagen más ancha que la carta - ajustar por altura
+        scaleY = imgAspect / cardAspect
+        offsetY = -(scaleY - 1) / 35
+      } else {
+        // Imagen más alta que la carta - ajustar por ancho
+        scaleX = cardAspect / imgAspect
+        offsetX = -(scaleX - 1) / 35
+      }
+      
+      customMap.repeat.set(scaleX, scaleY)
+      customMap.offset.set(offsetX, offsetY)
+      
+      console.log("Imagen:", imgWidth, "x", imgHeight, "aspect:", imgAspect.toFixed(2))
+      console.log("Ajuste - repeat:", scaleX.toFixed(2), scaleY.toFixed(2), "offset:", offsetX.toFixed(2), offsetY.toFixed(2))
+    } else {
+      // Fallback si no hay imagen cargada
+      customMap.repeat.set(1, 1)
+      customMap.offset.set(0, 0)
+    }
     
-    customMap.repeat.set(SCALE_FACTOR, SCALE_FACTOR)
-    customMap.offset.set(
-      (1 - SCALE_FACTOR) * 1.8, // Centrado horizontal
-      (1 - SCALE_FACTOR) * 2.1  // Centrado vertical
-    )
     customMap.rotation = 0
     customMap.needsUpdate = true
-
-    console.log("Textura configurada - repeat:", customMap.repeat, "offset:", customMap.offset)
   }, [imageUrl, customMap])
 
   useEffect(() => {
     if (!backMap) return
 
-    // Configurar la textura del reverso igual que la frontal
+    // Configurar la textura del reverso con el mismo sistema adaptativo
     backMap.colorSpace = THREE.SRGBColorSpace
     backMap.flipY = false
     backMap.anisotropy = 16
     
-    // ClampToEdgeWrapping para evitar repetición
-    backMap.wrapS = THREE.RepeatWrapping
-    backMap.wrapT = THREE.RepeatWrapping
+    // Usar ClampToEdgeWrapping para evitar repeticiones
+    backMap.wrapS = THREE.ClampToEdgeWrapping
+    backMap.wrapT = THREE.ClampToEdgeWrapping
     
-    // Aplicar el mismo factor que a la imagen frontal PARTE TRASERA 
-    const SCALE_FACTOR = 1.56
-    backMap.repeat.set(SCALE_FACTOR, SCALE_FACTOR)
-    backMap.offset.set(
-      (1 - SCALE_FACTOR) * 1.6, 
-      (1 - SCALE_FACTOR) * 1.9
-    )
+    // Sistema adaptativo para la imagen de reverso
+    if (backMap.image) {
+      const imgWidth = backMap.image.width
+      const imgHeight = backMap.image.height
+      const imgAspect = imgWidth / imgHeight
+      const cardAspect = 2 / 1.75
+      
+      let scaleX = 1.3
+      let scaleY = 1.3
+      let offsetX = 0
+      let offsetY = 0
+      
+      if (imgAspect > cardAspect) {
+        scaleY = imgAspect / cardAspect
+        offsetY = -(scaleY - 1) / 35
+      } else {
+        scaleX = cardAspect / imgAspect
+        offsetX = -(scaleX - 1) / 35
+      }
+      
+      backMap.repeat.set(scaleX, scaleY)
+      backMap.offset.set(offsetX, offsetY)
+    } else {
+      backMap.repeat.set(1, 1)
+      backMap.offset.set(0, 0)
+    }
+    
     backMap.needsUpdate = true
   }, [backMap])
 

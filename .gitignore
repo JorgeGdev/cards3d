@@ -35,3 +35,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# project documentation and notes
+preguntas.txt
+project_complete.txt
+supabase_build.md
